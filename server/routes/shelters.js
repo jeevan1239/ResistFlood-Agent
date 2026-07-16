@@ -4,7 +4,7 @@ import Shelter from '../models/Shelter.js';
 const router = Router();
 
 // Simple seed function to ensure we have shelters in dev
-async function seedShelters() {
+export async function seedShelters() {
   const count = await Shelter.countDocuments();
   if (count === 0) {
     await Shelter.insertMany([
@@ -16,8 +16,6 @@ async function seedShelters() {
     console.log('[Shelter] Seeded initial shelters.');
   }
 }
-
-seedShelters().catch(console.error);
 
 /**
  * GET /api/shelters

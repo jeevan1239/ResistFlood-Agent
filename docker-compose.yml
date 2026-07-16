@@ -1,0 +1,113 @@
+# ==============================================================================
+# ResistFlood — Docker Compose (Local Development)
+# ==============================================================================
+# Usage:
+#   1. cp .env.example .env
+#   2. Add your GEMINI_API_KEY to .env
+#   3. docker compose up --build
+#
+# Services:  client (5173)  |  server (5000)  |  mongodb (27017 internal)
+# Volumes:   mongo_data  |  uploads_data
+# Hot reload: nodemon watches server/  |  Vite HMR watches client/src/
+# ==============================================================================
+
+services:
+
+  # ── MongoDB ──────────────────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    expose:
+      - "27017"
+    # ── Optional: MongoDB Compass access from the host ──────────────────────
+    # Uncomment the two lines below, then run: docker compose up -d mongodb
+    # Connection string in Compass: mongodb://localhost:27017
+    # ports:
+    #   - "27017:27017"
+    # ────────────────────────────────────────────────────────────────────────
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Express API Server ────────────────────────────────────────────────────────
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # Override the Dockerfile CMD: run nodemon for hot reload in development.
+    # Nodemon watches *.js files and restarts the server on every save.
+    command: npm run dev
+    ports:
+      # Expose on host so the browser reaches Socket.io directly,
+      # and so the hardcoded localhost:5000 calls in Admin.jsx work.
+      - "5000:5000"
+    env_file:
+      # Load all variables from the root .env file.
+      # Individual environment: entries below override env_file values.
+      - .env
+    environment:
+      # Use the Docker service name — overrides any MONGODB_URI in .env.
+      MONGODB_URI: mongodb://mongodb:27017/resistflood
+      CLIENT_URL: http://localhost:5173
+      PORT: 5000
+      NODE_ENV: development
+    volumes:
+      # ── Hot reload ────────────────────────────────────────────────────────
+      # Mount source so nodemon sees every file save instantly.
+      - ./server:/app
+      # Preserve the node_modules that were installed inside the container
+      # during `docker build`. Without this anonymous volume, the host-mounted
+      # ./server would shadow /app/node_modules (which doesn't exist on host).
+      - /app/node_modules
+      # ── Persistent uploads ─────────────────────────────────────────────────
+      # Named volume so uploaded images survive container restarts.
+      - uploads_data:/app/uploads
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  # ── Vite React Client ─────────────────────────────────────────────────────────
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      # Proxy target inside Docker. Vite forwards /api/* and /uploads/* here.
+      SERVER_URL: http://server:5000
+      # VITE_API_URL is intentionally left unset so:
+      #   - axios uses the Vite proxy (relative URLs)
+      #   - socket.js falls back to 'http://localhost:5000' (host-mapped port)
+    volumes:
+      # ── Hot reload / HMR ──────────────────────────────────────────────────
+      # Mount source so Vite sees file changes and pushes HMR updates.
+      - ./client:/app
+      # Preserve the container's node_modules (same pattern as server above).
+      - /app/node_modules
+    depends_on:
+      server:
+        condition: service_healthy
+
+# ==============================================================================
+# Named Volumes
+# ==============================================================================
+volumes:
+  # MongoDB data — persists the full database between container restarts.
+  mongo_data:
+
+  # Uploaded images — persists files in server/uploads/ between restarts.
+  uploads_data:

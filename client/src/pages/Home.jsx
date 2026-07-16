@@ -31,7 +31,7 @@ export default function Home() {
       <div className="bg-white rounded-xl shadow p-6 w-full max-w-sm mb-6">
         <h2 className="text-lg font-semibold text-gray-700 mb-3">API Health Check</h2>
         {health ? (
-          <pre className="bg-gray-100 rounded p-3 text-sm text-green-700">
+          <pre className="bg-gray-100 rounded p-3 text-sm text-green-800">
             {JSON.stringify(health, null, 2)}
           </pre>
         ) : error ? (

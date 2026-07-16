@@ -90,8 +90,9 @@ export default function Report() {
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
+          <label htmlFor="report-photo" className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
           <input
+            id="report-photo"
             type="file"
             accept="image/*"
             capture="environment"

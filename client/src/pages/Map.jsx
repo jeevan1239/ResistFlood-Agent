@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, Circle, Polyline } from '
 import 'leaflet/dist/leaflet.css';
 import api from '../api/axios.js';
 import { socket } from '../socket.js';
+import { RadioTower, Navigation } from 'lucide-react';
 
 /**
  * Water-level colour thresholds (from BUILD_PLAN.md Phase 2):
@@ -25,7 +26,7 @@ function levelLabel(cm) {
 const BENGALURU_CENTER = [12.9716, 77.5946];
 const POLL_INTERVAL_MS = 15_000;
 
-export default function Map() {
+export default function FloodMap() {
   const [readings, setReadings] = useState([]);
   const [dangerZones, setDangerZones] = useState([]);
   const [shelters, setShelters] = useState([]);
@@ -187,8 +188,9 @@ export default function Map() {
           <button
             onClick={findSafeRoute}
             disabled={routing || shelters.length === 0}
-            className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+            className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 shadow-sm transition-colors"
           >
+            <Navigation className="w-4 h-4" />
             {routing ? 'Calculating...' : 'Find Safe Route'}
           </button>
         </div>
@@ -228,10 +230,16 @@ export default function Map() {
       {/* Map area */}
       <div className="flex-1 relative z-0">
         {!readings.length && !dangerZones.length && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-[1000] pointer-events-none">
-            <p className="text-gray-400 text-sm bg-white px-4 py-2 rounded shadow">
-              Waiting for sensor data… (start the simulator with <code>npm run simulate</code>)
-            </p>
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50/80 backdrop-blur-sm z-[1000] pointer-events-none">
+            <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 flex flex-col items-center text-center max-w-sm">
+              <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
+                <RadioTower className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800">Waiting for sensor data</h3>
+              <p className="text-sm text-gray-500 mt-2">
+                No readings or danger zones detected yet. Start the simulator with <code className="bg-gray-100 px-1 rounded text-gray-700">npm run simulate</code>
+              </p>
+            </div>
           </div>
         )}
         <MapContainer

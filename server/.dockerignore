@@ -1,0 +1,25 @@
+# Dependencies — never copy node_modules into the image
+node_modules
+
+# Git history and IDE config
+.git
+.gitignore
+.vscode
+
+# Runtime secrets — never bake into image
+.env
+
+# Test and dev artifacts
+*.log
+npm-debug.log*
+
+# Uploaded files — served from a named volume at runtime
+uploads
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# One-off test scripts
+test-image.jpg
+test_mongo.js

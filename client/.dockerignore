@@ -1,0 +1,21 @@
+# Dependencies — never copy into image
+node_modules
+
+# Git and IDE
+.git
+.gitignore
+.vscode
+
+# Secrets
+.env
+
+# Build output — image builds fresh from source
+dist
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS artifacts
+.DS_Store
+Thumbs.db

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { socket } from '../socket';
+import { ShieldPlus, Phone, ActivitySquare, LifeBuoy } from 'lucide-react';
 
 export default function Rescue() {
   const { user } = useAuth();
@@ -109,11 +110,15 @@ export default function Rescue() {
   return (
     <div className="max-w-4xl mx-auto p-4 mt-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-blue-700">Rescue Dashboard</h1>
+        <h1 className="text-2xl font-bold text-blue-800 tracking-tight flex items-center gap-2">
+          <LifeBuoy className="w-7 h-7 text-blue-600" />
+          Rescue Dashboard
+        </h1>
         <button
           onClick={() => setShowRegForm(!showRegForm)}
-          className="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700"
+          className="bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-800 transition-colors flex items-center gap-2 shadow-sm"
         >
+          <ShieldPlus className="w-4 h-4" />
           {showRegForm ? 'Close Form' : 'Register Vulnerable Person'}
         </button>
       </div>
@@ -154,7 +159,15 @@ export default function Rescue() {
             <tbody>
               {tasks.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="p-4 text-center text-gray-500">No active rescue tasks</td>
+                  <td colSpan="5" className="p-8">
+                    <div className="flex flex-col items-center justify-center text-center space-y-3 py-12">
+                      <span className="text-5xl" role="img" aria-label="Lifebuoy">🛟</span>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-800">No active rescue tasks</h3>
+                        <p className="text-gray-500 mt-1">Everyone is currently safe and accounted for.</p>
+                      </div>
+                    </div>
+                  </td>
                 </tr>
               )}
               {tasks.map(task => (
@@ -176,9 +189,10 @@ export default function Rescue() {
                           */}
                           <a 
                             href={`tel:${task.personId.emergencyContact.phone.replace(/[^0-9+]/g, '')}`} 
-                            className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium hover:bg-green-200"
+                            className="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-800 px-3 py-1.5 rounded-lg font-medium hover:bg-green-100 transition-colors shadow-sm"
                           >
-                            📞 Call Contact
+                            <Phone className="w-3.5 h-3.5" />
+                            Call Contact
                           </a>
                         </div>
                       </div>
@@ -187,7 +201,7 @@ export default function Rescue() {
                   <td className="p-3 text-sm">
                     {task.personId?.location.lat.toFixed(4)}, {task.personId?.location.lng.toFixed(4)}
                     {task.dangerZoneId && (
-                      <p className="text-red-500 text-xs">In {task.dangerZoneId.severity} danger zone</p>
+                      <p className="text-red-700 text-xs">In {task.dangerZoneId.severity} danger zone</p>
                     )}
                   </td>
                   <td className="p-3">
@@ -203,7 +217,7 @@ export default function Rescue() {
                       <button onClick={() => handleClaim(task._id)} className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Claim</button>
                     )}
                     {task.status === 'assigned' && task.assignedTo?._id === user?._id && (
-                      <button onClick={() => handleStatusUpdate(task._id, 'rescued')} className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">Mark Rescued</button>
+                      <button onClick={() => handleStatusUpdate(task._id, 'rescued')} className="bg-green-700 text-white px-3 py-1 rounded text-sm hover:bg-green-800">Mark Rescued</button>
                     )}
                   </td>
                 </tr>

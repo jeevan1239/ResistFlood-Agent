@@ -2,6 +2,8 @@ import { Server } from 'socket.io';
 
 let io;
 
+export let connectedClientsCount = 0;
+
 export function initSocket(server) {
   io = new Server(server, {
     cors: {
@@ -11,10 +13,12 @@ export function initSocket(server) {
   });
 
   io.on('connection', (socket) => {
-    console.log(`[socket] Client connected: ${socket.id}`);
+    connectedClientsCount++;
+    console.log(`[socket] Client connected: ${socket.id} (Total: ${connectedClientsCount})`);
     
     socket.on('disconnect', () => {
-      console.log(`[socket] Client disconnected: ${socket.id}`);
+      connectedClientsCount--;
+      console.log(`[socket] Client disconnected: ${socket.id} (Total: ${connectedClientsCount})`);
     });
   });
 

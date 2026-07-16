@@ -10,11 +10,21 @@ function getClient() {
   return new GoogleGenAI({ apiKey });
 }
 
+export const geminiStatus = {
+  lastSuccessfulCall: null,
+  lastError: null,
+  configured: !!process.env.GEMINI_API_KEY
+};
+
 async function callWithRetry(fn, maxRetries = 2) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await fn();
+      const result = await fn();
+      geminiStatus.lastSuccessfulCall = new Date();
+      geminiStatus.lastError = null;
+      return result;
     } catch (err) {
+      geminiStatus.lastError = err.message || 'Unknown error';
       const is429 = err?.status === 429 || err?.message?.includes('429');
       const isNetwork = err?.code === 'ECONNRESET' || err?.code === 'ENOTFOUND';
 

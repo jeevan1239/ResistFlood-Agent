@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { logActivity } from '../services/activityLogger.js';
 
 const SALT_ROUNDS = 12;
 const TOKEN_EXPIRY = '7d';
@@ -14,7 +15,7 @@ function signToken(userId) {
 /** POST /api/auth/register */
 export async function register(req, res) {
   try {
-    const { name, email, password, role, phone, preferredLanguage } = req.body;
+    const { name, email, password, phone, preferredLanguage } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'name, email and password are required.' });
@@ -30,7 +31,9 @@ export async function register(req, res) {
       name,
       email,
       passwordHash,
-      role: role || 'citizen',
+      // Public registration can only create citizen accounts. Privileged roles
+      // must be assigned through an administrative workflow.
+      role: 'citizen',
       phone: phone || '',
       preferredLanguage: preferredLanguage || 'en',
     });
@@ -72,6 +75,13 @@ export async function login(req, res) {
     }
 
     const token = signToken(user._id);
+
+    logActivity({
+      eventType: 'LOGIN',
+      description: `${user.name} logged in.`,
+      userId: user._id
+    });
+
     return res.json({
       token,
       user: {

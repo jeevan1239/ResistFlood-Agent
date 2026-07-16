@@ -44,7 +44,7 @@ export default function Login() {
         <h1 className="text-2xl font-bold text-blue-700 mb-1">
           {mode === 'login' ? 'Sign In' : 'Create Account'}
         </h1>
-        <p className="text-gray-400 text-sm mb-6">
+        <p className="text-gray-600 text-sm mb-6">
           {mode === 'login' ? 'Welcome back to ResistFlood.' : 'Join ResistFlood to help your community.'}
         </p>
 

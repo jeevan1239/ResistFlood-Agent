@@ -2,8 +2,9 @@ import { Router } from 'express';
 import VulnerablePerson from '../models/VulnerablePerson.js';
 import RescueTask from '../models/RescueTask.js';
 import { scoreRescueTask } from '../services/rescueQueue.js';
-import { protect } from '../middleware/auth.js';
+import { protect, authorize } from '../middleware/auth.js';
 import { getIo } from '../services/socket.js';
+import { logActivity } from '../services/activityLogger.js';
 
 const router = Router();
 
@@ -11,7 +12,7 @@ const router = Router();
  * POST /api/rescue/register
  * Register a vulnerable person
  */
-router.post('/register', async (req, res) => {
+router.post('/register', protect, async (req, res) => {
   try {
     const person = await VulnerablePerson.create(req.body);
     let task = new RescueTask({ personId: person._id });
@@ -19,6 +20,13 @@ router.post('/register', async (req, res) => {
     await task.populate('personId');
     task = await scoreRescueTask(task);
     getIo().emit('rescue-queue:update');
+
+    logActivity({
+      eventType: 'RESCUE_CREATED',
+      description: `Rescue task created for ${person.name}.`,
+      relatedObjectId: task._id.toString()
+    });
+
     return res.status(201).json({ person, task });
   } catch (err) {
     console.error('[rescue]', err);
@@ -30,7 +38,7 @@ router.post('/register', async (req, res) => {
  * GET /api/rescue/queue
  * Get prioritized rescue queue
  */
-router.get('/queue', async (req, res) => {
+router.get('/queue', protect, authorize('volunteer', 'authority', 'admin'), async (req, res) => {
   try {
     const tasks = await RescueTask.find({ status: { $in: ['pending', 'assigned'] } })
       .populate('personId')
@@ -48,7 +56,7 @@ router.get('/queue', async (req, res) => {
  * PATCH /api/rescue/claim/:id
  * Assign a rescue task to the logged-in user
  */
-router.patch('/claim/:id', protect, async (req, res) => {
+router.patch('/claim/:id', protect, authorize('volunteer', 'authority', 'admin'), async (req, res) => {
   try {
     const task = await RescueTask.findById(req.params.id);
     if (!task) return res.status(404).json({ error: 'Task not found' });
@@ -57,6 +65,14 @@ router.patch('/claim/:id', protect, async (req, res) => {
     task.status = 'assigned';
     await task.save();
     getIo().emit('rescue-queue:update');
+
+    logActivity({
+      eventType: 'RESCUE_CLAIMED',
+      description: `Rescue task claimed by ${req.user.name}.`,
+      userId: req.user._id,
+      relatedObjectId: task._id.toString()
+    });
+
     return res.json(task);
   } catch (err) {
     console.error('[rescue]', err);
@@ -68,7 +84,7 @@ router.patch('/claim/:id', protect, async (req, res) => {
  * PATCH /api/rescue/status/:id
  * Update task status
  */
-router.patch('/status/:id', protect, async (req, res) => {
+router.patch('/status/:id', protect, authorize('volunteer', 'authority', 'admin'), async (req, res) => {
   try {
     const { status, notes } = req.body;
     const task = await RescueTask.findById(req.params.id);
@@ -78,6 +94,16 @@ router.patch('/status/:id', protect, async (req, res) => {
     if (notes) task.notes = notes;
     await task.save();
     getIo().emit('rescue-queue:update');
+    
+    if (status === 'rescued') {
+      logActivity({
+        eventType: 'RESCUE_COMPLETED',
+        description: `Rescue task completed.`,
+        userId: req.user._id,
+        relatedObjectId: task._id.toString()
+      });
+    }
+
     return res.json(task);
   } catch (err) {
     console.error('[rescue]', err);

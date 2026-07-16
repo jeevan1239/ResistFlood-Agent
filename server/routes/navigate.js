@@ -2,6 +2,7 @@ import { Router } from 'express';
 import DangerZone from '../models/DangerZone.js';
 import * as turf from '@turf/turf';
 import { summarizeRoute } from '../services/gemini.js';
+import { logActivity } from '../services/activityLogger.js';
 
 const router = Router();
 const OSRM_URL = 'https://router.project-osrm.org/route/v1/driving';
@@ -68,6 +69,11 @@ router.get('/', async (req, res) => {
       : [];
 
     const summary = await summarizeRoute(steps);
+
+    logActivity({
+      eventType: 'SAFE_ROUTE_GENERATED',
+      description: 'A safe navigation route was calculated.'
+    });
 
     return res.json({
       recommendedRoute: {

@@ -2,7 +2,7 @@ import * as turf from '@turf/turf';
 import SensorReading from '../models/SensorReading.js';
 import FloodReport from '../models/FloodReport.js';
 import DangerZone from '../models/DangerZone.js';
-
+import { logActivity } from './activityLogger.js';
 import { getIo } from './socket.js';
 
 const CLUSTER_RADIUS_KM = 0.3; // 300 meters
@@ -167,17 +167,33 @@ export async function updateDangerZones() {
         });
         activeZoneIds.push(newZone._id.toString());
         anyModified = true;
+
+        logActivity({
+          eventType: 'DANGER_ZONE_CREATED',
+          description: `New ${maxSeverity} danger zone identified.`,
+          relatedObjectId: newZone._id.toString()
+        });
       }
     }
 
+    const zonesToResolve = await DangerZone.find({
+      status: 'active', 
+      _id: { $nin: activeZoneIds },
+      updatedAt: { $lt: threeHoursAgo } 
+    });
+
     const result = await DangerZone.updateMany(
-      { 
-        status: 'active', 
-        _id: { $nin: activeZoneIds },
-        updatedAt: { $lt: threeHoursAgo } 
-      },
+      { _id: { $in: zonesToResolve.map(z => z._id) } },
       { status: 'resolved' }
     );
+
+    for (const z of zonesToResolve) {
+      logActivity({
+        eventType: 'DANGER_ZONE_RESOLVED',
+        description: `Danger zone resolved.`,
+        relatedObjectId: z._id.toString()
+      });
+    }
 
     if (anyModified || result.modifiedCount > 0) {
       getIo().emit('danger-zone:update');
