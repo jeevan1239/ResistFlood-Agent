@@ -1,11 +1,17 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import http from 'http';
-import app from './app.js';
-import { connectDB } from './config/db.js';
-import { updateDangerZones } from './services/clustering.js';
-import { updateAllScores } from './services/rescueQueue.js';
-import { initSocket } from './services/socket.js';
-import { seedShelters } from './routes/shelters.js';
+
+const serverDir = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(serverDir, '../.env') });
+
+const { default: app } = await import('./app.js');
+const { connectDB } = await import('./config/db.js');
+const { updateDangerZones } = await import('./services/clustering.js');
+const { updateAllScores } = await import('./services/rescueQueue.js');
+const { initSocket } = await import('./services/socket.js');
+const { seedShelters } = await import('./routes/shelters.js');
 
 export { systemStats } from './stats.js';
 
